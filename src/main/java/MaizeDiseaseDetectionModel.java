@@ -18,6 +18,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
@@ -33,18 +34,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD;
+
 @Slf4j
 public class MaizeDiseaseDetectionModel {
 
     public static void main(String[] args) throws IOException {
         String BASE_PATH = "Dataset";
-        int height = 150;    // height of the picture in px
-        int width = 150;     // width of the picture in px
+        int height = 256;    // height of the picture in px
+        int width = 256;     // width of the picture in px
         int channels = 3;   // 3 channels for colored  images
         //TODO: Update to number of output of maize diseases
         int outputNum = 4; // 10 digits classification
         int batchSize = 54; // number of samples that will be propagated through the network in each iteration
-        int nEpochs = 1;    // number of training epochs
+        int nEpochs = 10;    // number of training epochs
 
         int seed = 1234;    // number used to initialize a pseudorandom number generator.
         Random randNumGen = new Random(seed);
@@ -75,17 +78,20 @@ public class MaizeDiseaseDetectionModel {
         log.info("Network configuration and training...");
         // reduce the learning rate as the number of training epochs increases
         // iteration #, learning rate
-//        Map<Integer, Double> learningRateSchedule = new HashMap<Integer, Double>();
-//        learningRateSchedule.put(0, 0.06);
-//        learningRateSchedule.put(200, 0.05);
-//        learningRateSchedule.put(600, 0.028);
-//        learningRateSchedule.put(800, 0.0060);
-//        learningRateSchedule.put(1000, 0.001);
+        Map<Integer, Double> learningRateSchedule = new HashMap<Integer, Double>();
+        learningRateSchedule.put(0, 0.001);
+        learningRateSchedule.put(200, 0.05);
+        learningRateSchedule.put(600, 0.028);
+        learningRateSchedule.put(800, 0.0060);
+        learningRateSchedule.put(1000, 0.001);
+
+
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(seed)
-                .l2( 0.001) // ridge regression value
-                .updater(new Nadam())
+
+         .seed(seed)
+                .l2(0.0015 * 0.05) // ridge regression value
+                .updater(new Nesterovs(new MapSchedule(ScheduleType.ITERATION, learningRateSchedule)))
                 .weightInit(WeightInit.XAVIER)
                 .list()
                 .layer(new ConvolutionLayer.Builder(5, 5)
@@ -116,6 +122,10 @@ public class MaizeDiseaseDetectionModel {
                         .build())
                 .setInputType(InputType.convolutionalFlat(height, width, channels)) // InputType.convolutional for normal image
                 .build();
+
+
+
+
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
