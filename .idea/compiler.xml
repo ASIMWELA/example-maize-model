@@ -12,5 +12,6 @@
         <module name="example-maize-model" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel target="16" />
   </component>
 </project>
