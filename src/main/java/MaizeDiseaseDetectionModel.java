@@ -66,7 +66,6 @@ public class MaizeDiseaseDetectionModel {
 
         log.info("Network configuration and training...");
         // reduce the learning rate as the number of training epochs increases
-        // iteration #, learning rate
         Map<Integer, Double> learningRateSchedule = new HashMap<Integer, Double>();
         learningRateSchedule.put(0, 0.005);
         learningRateSchedule.put(200, 0.004);
