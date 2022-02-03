@@ -3,6 +3,7 @@ import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.split.FileSplit;
 import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.recordreader.ImageRecordReader;
+import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -14,6 +15,9 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.ui.api.UIServer;
+import org.deeplearning4j.ui.model.stats.StatsListener;
+import org.deeplearning4j.ui.model.storage.FileStatsStorage;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
@@ -36,12 +40,12 @@ public class MaizeDiseaseDetectionModel {
 
     public static void main(String[] args) throws IOException {
         String BASE_PATH = "Dataset";
-        int height = 256;    // height of the picture in px
-        int width = 256;     // width of the picture in px
+        int height = 215;    // height of the picture in px
+        int width = 215;     // width of the picture in px
         int channels = 3;   // 3 channels for colored  images
         int outputNum = 4; // 4 classes for classification
-        int batchSize = 54; // number of samples that will be propagated through the network in each iteration
-        int nEpochs = 10;    // number of training epochs
+        int batchSize = 50; // number of samples that will be propagated through the network in each iteration
+        int nEpochs = 8;    // number of training epochs
 
         int seed = 1234;    // number used to initialize a pseudorandom number generator.
         Random randNumGen = new Random(seed);
@@ -67,11 +71,9 @@ public class MaizeDiseaseDetectionModel {
         log.info("Network configuration and training...");
         // reduce the learning rate as the number of training epochs increases
         Map<Integer, Double> learningRateSchedule = new HashMap<Integer, Double>();
-        learningRateSchedule.put(0, 0.005);
-        learningRateSchedule.put(200, 0.004);
-        learningRateSchedule.put(600, 0.003);
-        learningRateSchedule.put(800, 0.002);
-        learningRateSchedule.put(1000, 0.001);
+        learningRateSchedule.put(0, 0.0030);
+        learningRateSchedule.put(100, 0.0020);
+        learningRateSchedule.put(200, 0.0010);
 
 
 
@@ -80,12 +82,12 @@ public class MaizeDiseaseDetectionModel {
          .seed(seed)
                 .l2(0.0015 * 0.05) // ridge regression value
                 .updater(new Nesterovs(new MapSchedule(ScheduleType.ITERATION, learningRateSchedule)))
-                .weightInit(WeightInit.XAVIER)
+                .weightInit(WeightInit.XAVIER_UNIFORM)
                 .list()
                 .layer(new ConvolutionLayer.Builder(5, 5)
                         .nIn(channels)
                         .stride(1, 1)
-                        .nOut(20)
+                        .nOut(100)
                         .activation(Activation.RELU)
                         .build())
                 .layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
@@ -94,7 +96,7 @@ public class MaizeDiseaseDetectionModel {
                         .build())
                 .layer(new ConvolutionLayer.Builder(5, 5)
                         .stride(1, 1) // nIn need not specified in later layers
-                        .nOut(50)
+                        .nOut(100)
                         .activation(Activation.IDENTITY)
                         .build())
                 .layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
@@ -117,8 +119,15 @@ public class MaizeDiseaseDetectionModel {
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-        net.setListeners(new ScoreIterationListener(10));
+//
+      StatsStorage statsStorage = new FileStatsStorage(new File(System.getProperty("java.io.tmpdir"), "ui-stats.dl4j"));
+      UIServer uiServer = UIServer.getInstance();
+      uiServer.attach(statsStorage);
+
+
+        net.setListeners(new StatsListener(statsStorage, 2), new ScoreIterationListener(10));
         log.info("Total num of params: {}", net.numParams());
+
 
         // evaluation while training (the score should go down)
         for (int i = 0; i < nEpochs; i++) {
@@ -131,8 +140,8 @@ public class MaizeDiseaseDetectionModel {
             testIter.reset();
         }
 
-        File maizeModelPath = new File(BASE_PATH + "/maize-disease-model.zip");
-        ModelSerializer.writeModel(net, maizeModelPath, true);
+        File maizeModelPath = new File("maize-disease-model.zip");
+        ModelSerializer.writeModel(net, maizeModelPath, false);
         log.info("The Maize disease detetion model has been saved in {}", maizeModelPath.getPath());
     }
 }

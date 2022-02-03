@@ -7,19 +7,24 @@
     <groupId>org.example</groupId>
     <artifactId>MaizeDiseasesDetectionModel</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <properties>
         <dl4j-master.version>1.0.0-M1.1</dl4j-master.version>
         <!-- Change the nd4j.backend property to nd4j-cuda-X-platform to use CUDA GPUs -->
 <!--         <nd4j.backend>nd4j-cuda-11.2</nd4j.backend>-->
         <nd4j.backend>nd4j-native</nd4j.backend>
-
-        <!-- https://mvnrepository.com/artifact/org.nd4j/nd4j-cuda-10.2 -->
-<!--        <dependency>-->
-<!--            <groupId>org.nd4j</groupId>-->
-<!--            <artifactId>nd4j-cuda-10.2</artifactId>-->
-<!--            <version>1.0.0-beta7</version>-->
-<!--        </dependency>-->
 
         <java.version>16</java.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
@@ -110,7 +115,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.4</version>
+            <version>1.18.22</version>
         </dependency>
     </dependencies>
 
