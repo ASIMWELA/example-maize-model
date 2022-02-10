@@ -40,14 +40,14 @@ public class MaizeDiseaseDetectionModel {
 
     public static void main(String[] args) throws IOException {
         String BASE_PATH = "Dataset";
-        int height = 215;    // height of the picture in px
-        int width = 215;     // width of the picture in px
+        int height = 220;    // height of the picture in px
+        int width = 220;     // width of the picture in px
         int channels = 3;   // 3 channels for colored  images
         int outputNum = 4; // 4 classes for classification
-        int batchSize = 50; // number of samples that will be propagated through the network in each iteration
+        int batchSize = 20; // number of samples that will be propagated through the network in each iteration
         int nEpochs = 8;    // number of training epochs
 
-        int seed = 1234;    // number used to initialize a pseudorandom number generator.
+        int seed = 123;    // number used to initialize a pseudorandom number generator.
         Random randNumGen = new Random(seed);
         File trainData = new File(BASE_PATH + "/train");
         FileSplit trainSplit = new FileSplit(trainData, NativeImageLoader.ALLOWED_FORMATS, randNumGen);
@@ -79,7 +79,7 @@ public class MaizeDiseaseDetectionModel {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 
-         .seed(seed)
+                .seed(seed)
                 .l2(0.0015 * 0.05) // ridge regression value
                 .updater(new Nesterovs(new MapSchedule(ScheduleType.ITERATION, learningRateSchedule)))
                 .weightInit(WeightInit.XAVIER_UNIFORM)
@@ -87,24 +87,24 @@ public class MaizeDiseaseDetectionModel {
                 .layer(new ConvolutionLayer.Builder(5, 5)
                         .nIn(channels)
                         .stride(1, 1)
-                        .nOut(100)
+                        .nOut(32)
                         .activation(Activation.RELU)
                         .build())
-                .layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                .layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG)
                         .kernelSize(2, 2)
                         .stride(2, 2)
                         .build())
                 .layer(new ConvolutionLayer.Builder(5, 5)
                         .stride(1, 1) // nIn need not specified in later layers
-                        .nOut(100)
+                        .nOut(32)
                         .activation(Activation.IDENTITY)
                         .build())
-                .layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                .layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG)
                         .kernelSize(2, 2)
                         .stride(2, 2)
                         .build())
                 .layer(new DenseLayer.Builder().activation(Activation.RELU)
-                        .nOut(500)
+                        .nOut(64)
                         .build())
                 .layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
@@ -120,9 +120,9 @@ public class MaizeDiseaseDetectionModel {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 //
-      StatsStorage statsStorage = new FileStatsStorage(new File(System.getProperty("java.io.tmpdir"), "ui-stats.dl4j"));
-      UIServer uiServer = UIServer.getInstance();
-      uiServer.attach(statsStorage);
+        StatsStorage statsStorage = new FileStatsStorage(new File(System.getProperty("java.io.tmpdir"), "ui-stats.dl4j"));
+        UIServer uiServer = UIServer.getInstance();
+        uiServer.attach(statsStorage);
 
 
         net.setListeners(new StatsListener(statsStorage, 2), new ScoreIterationListener(10));
